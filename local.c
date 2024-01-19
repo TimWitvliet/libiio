@@ -1738,13 +1738,16 @@ static int add_scan_element(void *d, const char *path)
 static int foreach_in_dir(void *d, const char *path, bool is_dir,
 		int (*callback)(void *, const char *))
 {
+	IIO_DEBUG("foreach_in_dir start. path: %s. is_dir: %d\n", path, is_dir);
 	struct dirent *entry;
 	DIR *dir;
 	int ret = 0;
 
 	dir = opendir(path);
-	if (!dir)
+	if (!dir) {
+		IIO_ERROR("Failed to open directory %s\n", path);
 		return -errno;
+	}
 
 	while (true) {
 		struct stat st;
@@ -1753,15 +1756,18 @@ static int foreach_in_dir(void *d, const char *path, bool is_dir,
 		errno = 0;
 		entry = readdir(dir);
 		if (!entry) {
-			if (!errno)
+			if (!errno) {
+				IIO_WARNING("Directory is empty!\n");
 				break;
+			}
+			IIO_ERROR("Error from readdir: %s(%d)\n", strerror(errno), errno);
 
 			ret = -errno;
 			iio_strerror(errno, buf, sizeof(buf));
 			IIO_ERROR("Unable to open directory %s: %s\n", path, buf);
 			goto out_close_dir;
 		}
-
+		IIO_DEBUG("entry: %s/%s\n", path, entry->d_name);
 		iio_snprintf(buf, sizeof(buf), "%s/%s", path, entry->d_name);
 		if (stat(buf, &st) < 0) {
 			ret = -errno;
@@ -1770,12 +1776,16 @@ static int foreach_in_dir(void *d, const char *path, bool is_dir,
 			goto out_close_dir;
 		}
 
-		if (is_dir && S_ISDIR(st.st_mode) && entry->d_name[0] != '.')
+		if (is_dir && S_ISDIR(st.st_mode) && entry->d_name[0] != '.') {
+			IIO_DEBUG("Calling callback - 1\n");
 			ret = callback(d, buf);
-		else if (!is_dir && S_ISREG(st.st_mode))
+		} else if (!is_dir && S_ISREG(st.st_mode)) {
+			IIO_DEBUG("Calling callbac - 2\n");
 			ret = callback(d, buf);
-		else
+		} else {
+			IIO_DEBUG("Not calling callback - continue");
 			continue;
+		}
 
 		if (ret < 0)
 			goto out_close_dir;
@@ -2138,10 +2148,15 @@ struct iio_context * local_create_context(void)
 	if (WITH_HWMON) {
 		IIO_DEBUG("Scanning /sys/class/hwmon\n");
 		ret = foreach_in_dir(ctx, "/sys/class/hwmon", true, create_device);
-		if (ret == -ENOENT && !no_iio)
+		IIO_DEBUG("return value from foreach_in_dir: %d\n", ret);
+		if (ret == -ENOENT && !no_iio) {
+			IIO_DEBUG("There are no hwmon devices, but there are IIO devices\n");
 			ret = 0; /* IIO devices but no hwmon devices - not an error */
-		if (ret < 0)
+		}
+		if (ret < 0) {
+			IIO_ERROR("No devices from IIO or from hwmon!\n");
 			goto err_context_destroy;
+		}
 	}
 
 	qsort(ctx->devices, ctx->nb_devices, sizeof(struct iio_device *),
