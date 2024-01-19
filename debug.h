@@ -30,26 +30,26 @@
  */
 #define IIO_DEBUG(...) \
     do { \
-	if (LOG_LEVEL >= Debug_L) \
             fprintf(stdout, "DEBUG: " __VA_ARGS__); /* Flawfinder: ignore */ \
+            fprintf(stderr, "DEBUG: " __VA_ARGS__); /* Flawfinder: ignore */ \
     } while (0)
 
 #define IIO_INFO(...) \
     do { \
-	if (LOG_LEVEL >= Info_L) \
-            fprintf(stdout, __VA_ARGS__); /* Flawfinder: ignore */ \
+            fprintf(stdout, "INFO: " __VA_ARGS__); /* Flawfinder: ignore */ \
+            fprintf(stderr, "INFO: " __VA_ARGS__); /* Flawfinder: ignore */ \
     } while (0)
 
 #define IIO_WARNING(...) \
     do { \
-	if (LOG_LEVEL >= Warning_L) \
+            fprintf(stdout, "WARNING: " __VA_ARGS__); /* Flawfinder: ignore */ \
             fprintf(stderr, "WARNING: " __VA_ARGS__); /* Flawfinder: ignore */ \
     } while (0)
 
 #define IIO_ERROR(...) \
     do { \
-	if (LOG_LEVEL >= Error_L) \
-            fprintf(stderr, "ERROR: " __VA_ARGS__); /* Flawfinder: ignore */ \
+    fprintf(stdout, "ERROR: " __VA_ARGS__); /* Flawfinder: ignore */ \
+    fprintf(stderr, "ERROR: " __VA_ARGS__); /* Flawfinder: ignore */ \
     } while (0)
 
 #endif

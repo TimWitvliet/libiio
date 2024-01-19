@@ -414,6 +414,12 @@ struct iio_context * iio_create_context_from_uri(const char *uri)
 
 struct iio_context * iio_create_default_context(void)
 {
+	fprintf(stdout, "iio_create_default_context() was just called!(stdout)");
+	fprintf(stderr, "iio_create_default_context() was just called!(stderr)");
+	IIO_DEBUG("Trying a debug message");
+	IIO_INFO("Trying an info message");
+	IIO_WARNING("Trying a warning message");
+	IIO_ERROR("Trying an error message");
 	char *hostname = iio_getenv("IIOD_REMOTE");
 	struct iio_context * ctx;
 
