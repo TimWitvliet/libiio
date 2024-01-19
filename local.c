@@ -1759,8 +1759,7 @@ static int foreach_in_dir(void *d, const char *path, bool is_dir,
 			ret = -errno;
 			iio_strerror(errno, buf, sizeof(buf));
 			IIO_ERROR("Unable to stat file: %s\n", buf);
-			continue;
-			// goto out_close_dir;
+			goto out_close_dir;
 		}
 
 		if (is_dir && S_ISDIR(st.st_mode) && entry->d_name[0] != '.') {
