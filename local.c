@@ -1264,26 +1264,21 @@ static int read_device_label(struct iio_device *dev)
 
 static int add_attr_to_device(struct iio_device *dev, const char *attr)
 {
-	IIO_DEBUG("add_attr_to_device start\n");
 	unsigned int i;
 
 	for (i = 0; i < ARRAY_SIZE(device_attrs_denylist); i++) {
 		if (!strcmp(device_attrs_denylist[i], attr)) {
-			IIO_DEBUG("add_attr_to_device end\n");
 			return 0;
 		}
 	}
 
 	if (!strcmp(attr, "name")) {
-		IIO_DEBUG("add_attr_to_device end\n");
 		return read_device_name(dev);
 	}
 	if (!strcmp(attr, "label")) {
-		IIO_DEBUG("add_attr_to_device end\n");
 		return read_device_label(dev);
 	}
 
-	IIO_DEBUG("add_attr_to_device end\n");
 	return add_iio_dev_attr(&dev->attrs, attr, " ", dev->id);
 }
 
@@ -1509,7 +1504,6 @@ err_free_chn:
 static int add_channel(struct iio_device *dev, const char *name,
 	const char *path, bool dir_is_scan_elements)
 {
-	IIO_DEBUG("add_channel start\n");
 	struct iio_channel *chn;
 	char *channel_id;
 	unsigned int i;
@@ -1517,7 +1511,6 @@ static int add_channel(struct iio_device *dev, const char *name,
 
 	channel_id = get_channel_id(dev, name);
 	if (!channel_id) {
-		IIO_DEBUG("add_channel end\n");
 		return -ENOMEM;
 	}
 
@@ -1529,7 +1522,6 @@ static int add_channel(struct iio_device *dev, const char *name,
 			ret = add_attr_to_channel(chn, name, path,
 					dir_is_scan_elements);
 			chn->is_scan_element |= dir_is_scan_elements && !ret;
-			IIO_DEBUG("add_channel end\n");
 			return ret;
 		}
 	}
@@ -1537,7 +1529,6 @@ static int add_channel(struct iio_device *dev, const char *name,
 	chn = create_channel(dev, channel_id, name, path, dir_is_scan_elements);
 	if (IS_ERR(chn)) {
 		free(channel_id);
-		IIO_DEBUG("add_channel end\n");
 		return PTR_ERR(chn);
 	}
 
@@ -1548,7 +1539,6 @@ static int add_channel(struct iio_device *dev, const char *name,
 		local_free_channel_pdata(chn);
 		free_channel(chn);
 	}
-	IIO_DEBUG("add_channel end\n");
 	return ret;
 }
 
@@ -1707,7 +1697,6 @@ static int add_buffer_attr(void *d, const char *path)
 static int add_attr_or_channel_helper(struct iio_device *dev,
 		const char *path, bool dir_is_scan_elements)
 {
-	IIO_DEBUG("add_attr_or_channel_helper start\n");
 	char buf[1024];
 	const char *name = strrchr(path, '/') + 1;
 
@@ -1716,12 +1705,10 @@ static int add_attr_or_channel_helper(struct iio_device *dev,
 		path = buf;
 	} else {
 		if (!is_channel(dev, name, true)) {
-			IIO_DEBUG("add_attr_or_channel_helper end\n");
 			return add_attr_to_device(dev, name);
 		}
 		path = name;
 	}
-	IIO_DEBUG("add_attr_or_channel_helper end\n");
 	return add_channel(dev, name, path, dir_is_scan_elements);
 }
 
@@ -1757,7 +1744,6 @@ static int foreach_in_dir(void *d, const char *path, bool is_dir,
 		entry = readdir(dir);
 		if (!entry) {
 			if (!errno) {
-				IIO_WARNING("Directory is empty!\n");
 				break;
 			}
 			IIO_ERROR("Error from readdir: %s(%d)\n", strerror(errno), errno);
@@ -1777,13 +1763,12 @@ static int foreach_in_dir(void *d, const char *path, bool is_dir,
 		}
 
 		if (is_dir && S_ISDIR(st.st_mode) && entry->d_name[0] != '.') {
-			IIO_DEBUG("Calling callback - 1\n");
+			IIO_DEBUG("Calling callback\n");
 			ret = callback(d, buf);
 		} else if (!is_dir && S_ISREG(st.st_mode)) {
-			IIO_DEBUG("Calling callbac - 2\n");
+			IIO_DEBUG("Calling callback\n");
 			ret = callback(d, buf);
 		} else {
-			IIO_DEBUG("Not calling callback - continue");
 			continue;
 		}
 
@@ -1833,20 +1818,17 @@ static int add_buffer_attributes(struct iio_device *dev, const char *devpath)
 
 static int create_device(void *d, const char *path)
 {
-	IIO_DEBUG("create_device() path: %s\n", path);
 	uint32_t *mask = NULL;
 	unsigned int i;
 	int ret;
 	struct iio_context *ctx = d;
 	struct iio_device *dev = zalloc(sizeof(*dev));
 	if (!dev) {
-		IIO_ERROR("Failed to allocate memory!\n");
 		return -ENOMEM;
 	}
 
 	dev->pdata = zalloc(sizeof(*dev->pdata));
 	if (!dev->pdata) {
-		IIO_ERROR("Failed to allocate memory!\n");
 		free(dev);
 		return -ENOMEM;
 	}
@@ -1856,26 +1838,20 @@ static int create_device(void *d, const char *path)
 	dev->pdata->max_nb_blocks = NB_BLOCKS;
 
 	dev->ctx = ctx;
-	IIO_DEBUG("Calling iio_strdup\n");
 	dev->id = iio_strdup(strrchr(path, '/') + 1);
 	if (!dev->id) {
-		IIO_ERROR("Failed to allocate memory!\n");
 		local_free_pdata(dev);
 		free(dev);
 		return -ENOMEM;
 	}
 
-	IIO_DEBUG("Call foreach_in_dir for %s\n", path);
 	ret = foreach_in_dir(dev, path, false, add_attr_or_channel);
-	IIO_DEBUG("Returned from foreach_in_dir: %d\n", ret);
 	if (ret < 0)
 		goto err_free_device;
 
-	IIO_DEBUG("Call add_buffer_attributes()\n");
 	ret = add_buffer_attributes(dev, path);
 	if (ret < 0)
 		goto err_free_device;
-	IIO_DEBUG("Call add_scan_elements\n");
 	ret = add_scan_elements(dev, path);
 	if (ret < 0)
 		goto err_free_scan_elements;
@@ -1892,7 +1868,6 @@ static int create_device(void *d, const char *path)
 		if (ret < 0)
 			goto err_free_scan_elements;
 	}
-	IIO_DEBUG("call detect_and_move_global_attrs\n");
 	ret = detect_and_move_global_attrs(dev);
 	if (ret < 0)
 		goto err_free_device;
@@ -1916,9 +1891,7 @@ static int create_device(void *d, const char *path)
 	}
 
 	dev->mask = mask;
-	IIO_DEBUG("call iio_context_add_device\n");
 	ret = iio_context_add_device(ctx, dev);
-	IIO_DEBUG("iio_context_add_device result: %d\n", ret);
 	if (!ret)
 		return 0;
 
