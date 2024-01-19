@@ -414,21 +414,23 @@ struct iio_context * iio_create_context_from_uri(const char *uri)
 
 struct iio_context * iio_create_default_context(void)
 {
-	fprintf(stdout, "iio_create_default_context() was just called!(stdout)");
-	fprintf(stderr, "iio_create_default_context() was just called!(stderr)");
-	IIO_DEBUG("Trying a debug message");
-	IIO_INFO("Trying an info message");
-	IIO_WARNING("Trying a warning message");
-	IIO_ERROR("Trying an error message");
+	fprintf(stdout, "iio_create_default_context() was just called!(stdout)\n");
+	fprintf(stderr, "iio_create_default_context() was just called!(stderr)\n");
+	IIO_DEBUG("Trying a debug message\n");
+	IIO_INFO("Trying an info message\n");
+	IIO_WARNING("Trying a warning message\n");
+	IIO_ERROR("Trying an error message\n");
 	char *hostname = iio_getenv("IIOD_REMOTE");
 	struct iio_context * ctx;
 
 	if (hostname) {
+		IIO_DEBUG("Hostname: %s\n", hostname);
 		ctx = iio_create_context_from_uri(hostname);
 		free(hostname);
 		return ctx;
 	}
 
+	IIO_DEBUG("Creating a local context\n");
 	return iio_create_local_context();
 }
 
@@ -437,6 +439,7 @@ struct iio_context * iio_create_local_context(void)
 	if (WITH_LOCAL_BACKEND)
 		return local_create_context();
 
+	IIO_ERROR("Local backend disabled!\n");
 	errno = ENOSYS;
 	return NULL;
 }

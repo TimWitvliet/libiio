@@ -2077,6 +2077,7 @@ out_close_ini:
 
 struct iio_context * local_create_context(void)
 {
+	IIO_DEBUG("local_create_context\n");
 	struct iio_context *ctx;
 	char *description;
 	int ret = -ENOMEM;
@@ -2084,22 +2085,30 @@ struct iio_context * local_create_context(void)
 	bool no_iio;
 
 	description = local_get_description(NULL);
+	IIO_DEBUG("description: %s\n", description);
 
 	ctx = iio_context_create_from_backend(&local_backend, description);
 	free(description);
-	if (!ctx)
+	if (!ctx) {
+		IIO_ERROR("Failed to create iio context from backend\n");
 		goto err_set_errno;
+	}
+
 
 	local_set_timeout(ctx, DEFAULT_TIMEOUT_MS);
 
+	IIO_DEBUG("Scanning /sys/bus/iio/devices\n");
 	ret = foreach_in_dir(ctx, "/sys/bus/iio/devices", true, create_device);
+	IIO_DEBUG("return value from foreach_in_dir: %d\n", ret);
 	no_iio = ret == -ENOENT;
+	IIO_DEBUG("no_iio: %d\n", no_iio);
 	if (WITH_HWMON && no_iio)
 	      ret = 0; /* Not an error, unless we also have no hwmon devices */
 	if (ret < 0)
 	      goto err_context_destroy;
 
 	if (WITH_HWMON) {
+		IIO_DEBUG("Scanning /sys/class/hwmon\n");
 		ret = foreach_in_dir(ctx, "/sys/class/hwmon", true, create_device);
 		if (ret == -ENOENT && !no_iio)
 			ret = 0; /* IIO devices but no hwmon devices - not an error */
